@@ -28,6 +28,12 @@ void SeedRand( unsigned int seed ) {
 	lfsr = seed;
 }
 
+// Random number based on TimerA CCR1 value
+int timer_rand(int max){
+	unsigned int val = CCR1 % max;
+	return val;
+}
+
 #define Random()		((LFSR_next() & 0x8000) >> 15) 			// random in the range [0, 1]
 
 #endif /* RAND_H_ */

@@ -11,7 +11,7 @@
 * Schematic
 *              		     MSP430G2553
 *                     -----------------
-*		             |VCC           GND|
+*		      3.3 <--|VCC           GND|--> GND
 *             LED <--|P1.0		    xin|
 *             TXD <--|P1.1         xout|
 *		      RXD <--|P1.2         test|
@@ -26,19 +26,24 @@
 ******************************************************************************/
 
 #include  <msp430g2553.h>
+#include  "stdint.h"
 #include  "main.h"
 #include  "rand.h"
 
 unsigned int speed;					// Speed of motors aka duty cycle
+char recv;							// Character from serial port
+
+//************* MAIN *************//
 
 void main(void){
 	//Initialize
     msp_init();						// Setup msp430 options
     motor_init();					// Motor control setup
     sensor_init();					// IR sensors setup
-    timerA_init();					// Interrupt setup
+    timerA_init();					// Timer setup
+    sci_init();						// SCI setup
 
-    //GIE;							// Global interrupt enable
+    __enable_interrupt(); 			// Enable all interrupts
     speed = 900;					// Default speed
     while(42){
     	autonomous();
@@ -48,8 +53,11 @@ void main(void){
 }
 
 //************* INITS *************//
+
 void msp_init(){
 	WDTCTL = WDTPW + WDTHOLD;       // Stop WDT
+	BCSCTL1 = CALBC1_1MHZ; 			// Set DCO
+	DCOCTL = CALDCO_1MHZ;			// Clock at 1MHz
 }
 
 void motor_init(){
@@ -67,18 +75,38 @@ void sensor_init(){
 	P1DIR &= ~BIT6;					// P1.6 set as input - IR FR
 	P1DIR &= ~BIT7;					// P1.7 set as input - IR FL
 	P2DIR &= ~BIT5;					// P2.5 set as input - IR R
+	P1IE |= BIT6 + BIT7;			// P1.6 and P1.7 interrupt enabled
+	P2IE |= BIT5;					// P2.5 interrupt enabled
+	P1IES |= BIT6 + BIT7;			// Interrupts occur on High->Low edge
+	P2IES |= BIT5;
 }
 
 void timerA_init(){
-	CCTL0 = CCIE;                   // CCR0 TA0.0 interrupt enabled
+	CCTL0 = CCIE;                   // CCR0 TA0 interrupt enabled
     CCR0 = 1000-1;                  // PWM Period
     CCTL0 = OUTMOD_3;               // CCR0 reset/set
-    CCR0 = 950;                     // CCR0 PWM duty cycle
+    CCR1 = 950;                     // CCR1 PWM duty cycle
     TACTL = TASSEL_2 + MC_1 + ID_3; // SMCLK/8, upmode
 }
 
+void sci_init(){
+	P1SEL |= BIT1 + BIT2 ; 			// P1.1 = RXD, P1.2=TXD
+	P1SEL2 |= BIT1 + BIT2 ; 		// P1.1 = RXD, P1.2=TXD
+	UCA0CTL1 |= UCSSEL_2; 			// SMCLK
+	//UCA0BR0 = 104;			 	// 1MHz 9600 Baud
+	//UCA0BR1 = 0; 					// 1MHz 9600 Baud
+	//UCA0MCTL = UCBRS0; 			// Modulation UCBRSx = 1
+	UCA0BR0 = 8;                   	// 1MHz 115200 Baud
+	UCA0BR1 = 0;                   	// 1MHz 115200 Baud
+	UCA0MCTL = UCBRS2 + UCBRS0;    	// Modulation UCBRSx = 5b
+	UCA0CTL1 &= ~UCSWRST; 			// **Initialize USCI state machine**
+	IE2 |= UCA0RXIE; 				// Enable USCI_A0 RX interrupt
+}
+
 //************* MOTION CONTROL *************//
+
 //****** motor level ******//
+
 void motorA_frw(){
 	P1OUT |= BIT3;					// Dir bits set to move forward
 	P1OUT &= ~BIT4;
@@ -99,10 +127,11 @@ void motorB_rvs(){
 	P2OUT &= ~BIT1;
 }
 
-//****** robot level ******//
+//****** unit level ******//
+
 void stop(){
 	CCR1 = 0;						// Turn off pwn en to stop motors
-//	__delay_cycles(200);
+	delay_ms(30);
 }
 
 void forward(int speed) {
@@ -134,15 +163,22 @@ void right(int speed){
 }
 
 //****** system level ******//
+
 void autonomous(){
-	// If IR-FL(P1.7) or IR-FR(P1.6) is low --> reverse
-	if(((BIT6 & P1IN)==0x00) | ((BIT7 & P1IN)==0x00)){
-		if ((BIT5 & P2IN) == 0){	// If IR-R(P2.5) is low when reversing --> turn
-			right(speed);
-	    }
-	    else reverse(speed);		// If clear behind --> reverse
+	//pseudo-random motion?
+	unsigned int rnd = timer_rand(100);
+	if(rnd < 70) {					// 70% forward
+		forward(speed);
+		delay_ms(4000+timer_rand(1000));
 	}
-	else forward(speed);			// Otherwise --> forward
+	else if(rnd < 85) {				// 15 % right
+		 right(speed);
+		 delay_ms(2000+timer_rand(1000));
+	}
+	else {							// 15% left
+		left(speed);
+		delay_ms(2000+timer_rand(10000));
+	}
 }
 
 void rnd_turn(){
@@ -153,6 +189,34 @@ void rnd_turn(){
 }
 
 //************* INTERRUPT VECTORS *************//
+
+// Port 1 interrupt service routine
+// Occurs when sensor pins detect hi->lo
+#pragma vector=PORT1_VECTOR
+__interrupt void Port_1(void){
+	// If IR-FL(P1.7) or IR-FR(P1.6) is low --> reverse
+	if(((BIT6 & P1IN)==0x00) | ((BIT7 & P1IN)==0x00)){
+		if ((BIT5 & P2IN) == 0){	// If IR-R(P2.5) is low when reversing --> turn
+			rnd_turn();
+		}
+		else{
+			reverse(speed);			// If clear behind --> reverse
+			__delay_cycles(350);	// Reverse for a bit
+			rnd_turn();				// Turn away
+		}
+	}
+	P1IFG &= ~BIT6; // P1.6 IFG cleared
+	P1IFG &= ~BIT7; // P1.7 IFG cleared
+	P2IFG &= ~BIT5; // P2.5 IFG cleared
+}
+
+// USCI interrupt service routine
+// Occurs when receive buffer is full
+#pragma vector=USCIAB0RX_VECTOR
+__interrupt void USCI0RX_ISR(void){ // RX interrupt
+   recv = UCA0RXBUF; 				// Read RX
+}
+
 /*
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void Timer_A (void){
