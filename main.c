@@ -53,9 +53,9 @@ void msp_init(){
 }
 
 void motor_init(){
-	P1DIR |= BIT3 + BIT4 + BIT2;    // P1.3 and P1.4 are dir control (MOTOR 1) and P1.5 pwm en
+	P1DIR |= BIT3 + BIT4 + BIT5;    // P1.3 and P1.4 are dir control (MOTOR 1) and P1.5 pwm en
 	P2DIR |= BIT0 + BIT1;			// P2.0 and P2.1 are dir control (MOTOR 2) shared pwn en
-	P1SEL |= BIT2;                  // P1.5 TA0.0 options
+	P1SEL |= BIT5;                  // P1.5 TA0.0 options
 
 	P1OUT |= BIT3;					// Dir bits must be opposite for motion
 	P1OUT &= ~BIT4;					// If same, motor turns off
@@ -70,10 +70,10 @@ void sensor_init(){
 }
 
 void timerA_init(){
-	CCTL0 = CCIE;                   // CCR0 TA0 interrupt enabled
+	CCTL0 = CCIE;                   // CCR0 TA0.0 interrupt enabled
     CCR0 = 1000-1;                  // PWM Period
-    CCTL1 = OUTMOD_3;               // CCR1 reset/set
-    CCR1 = 950;                     // CCR1 PWM duty cycle
+    CCTL0 = OUTMOD_3;               // CCR0 reset/set
+    CCR0 = 950;                     // CCR0 PWM duty cycle
     TACTL = TASSEL_2 + MC_1 + ID_3; // SMCLK/8, upmode
 }
 
