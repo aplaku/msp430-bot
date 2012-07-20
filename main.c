@@ -11,16 +11,16 @@
 * Schematic
 *              		     MSP430G2553
 *                     -----------------
-*		      3.3 <--|VCC           GND|--> GND
-*             LED <--|P1.0		    xin|
+*	      3.3 <--|VCC           GND|--> GND
+*             LED <--|P1.0	    xin|
 *             TXD <--|P1.1         xout|
-*		      RXD <--|P1.2         test|
-*   Dir control A <--|P1.3		   -RST|
-*   Dir control A <--|P1.4         P1.7|--> IR sensor FL
-*	 TA0.0 pwn-en <--|P1.5         P1.6|--> IR sensor FR
+*	      RXD <--|P1.2         test|
+*   Dir control A <--|P1.3	   -RST|
+*    TA0.0 pwn-en <--|P1.4         P1.7|--> IR sensor FL
+*   Dir control A <--|P1.5         P1.6|--> IR sensor FR
 *   Dir control B <--|P2.0         P2.5|--> IR sensor R
-*   Dir control B <--|P2.1 		   P2.4|
-*                 <--|P2.2		   P2.3|
+*   Dir control B <--|P2.1 	   P2.4|
+*                 <--|P2.2	   P2.3|
 *                     -----------------
 *
 ******************************************************************************/
@@ -70,9 +70,9 @@ void msp_init(){
 }
 
 void motor_init(){
-	P1DIR |= BIT3 + BIT4 + BIT5;    // P1.3 and P1.4 are dir control (MOTOR 1) and P1.5 pwm en
+	P1DIR |= BIT3 + BIT4 + BIT5;    // P1.3 and P1.5 are dir control (MOTOR 1) and P1.4 pwm en
 	P2DIR |= BIT0 + BIT1;			// P2.0 and P2.1 are dir control (MOTOR 2) shared pwn en
-	P1SEL |= BIT4;                  // P1.5 TA0.0 options
+	P1SEL |= BIT4;                  // P1.4 TA0.0 options
 
 	P1OUT |= BIT3;					// Dir bits must be opposite for motion
 	P1OUT &= ~BIT5;					// If same, motor turns off
