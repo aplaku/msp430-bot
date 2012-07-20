@@ -11,16 +11,16 @@
 * Schematic
 *              		     MSP430G2553
 *                     -----------------
-*	      3.3 <--|VCC           GND|--> GND
-*             LED <--|P1.0	    xin|
+*	          3.3 <--|VCC           GND|--> GND
+*             LED <--|P1.0	        xin|
 *             TXD <--|P1.1         xout|
-*	      RXD <--|P1.2         test|
-*   Dir control A <--|P1.3	   -RST|
+*	          RXD <--|P1.2         test|
+*   Dir control A <--|P1.3	       -RST|
 *    TA0.0 pwn-en <--|P1.4         P1.7|--> IR sensor FL
 *   Dir control A <--|P1.5         P1.6|--> IR sensor FR
 *   Dir control B <--|P2.0         P2.5|--> IR sensor R
-*   Dir control B <--|P2.1 	   P2.4|
-*                 <--|P2.2	   P2.3|
+*   Dir control B <--|P2.1 	       P2.4|
+*                 <--|P2.2	       P2.3|
 *                     -----------------
 *
 ******************************************************************************/
