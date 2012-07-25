@@ -37,8 +37,8 @@ void rnd_turn();
 //Delays
 void delay_ms(unsigned int ms ) {
     while (ms) {
-    	__delay_cycles(1000); // set it to 1000 for 1 Mhz
-    	ms = ms-1;
+        __delay_cycles(1000); // set it to 1000 for 1 Mhz
+        ms = ms-1;
     }
 }
 
