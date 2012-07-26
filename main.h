@@ -19,6 +19,8 @@ void msp_init();
 void motor_init();
 void sensor_init();
 void timerA_init();
+void timerB_init();
+void led_init();
 void sci_init();
 
 //Motion control
@@ -26,19 +28,19 @@ void motorA_frw();
 void motorA_rvs();
 void motorB_frw();
 void motorB_rvs();
-void forward(int speed);
-void reverse(int speed);
+void forward();
+void reverse();
 void stop();
-void left(int speed);
-void right(int speed);
+void left();
+void right();
 void autonomous();
 void rnd_turn();
 
 //Delays
 void delay_ms(unsigned int ms ) {
     while (ms) {
-        __delay_cycles(1000); // set it to 1000 for 1 Mhz
-        ms = ms-1;
+    	__delay_cycles(1000); // set it to 1000 for 1 Mhz
+    	ms = ms-1;
     }
 }
 
